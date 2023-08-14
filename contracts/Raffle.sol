@@ -20,7 +20,7 @@ error Raffle__RaffleNotOpen();
  */
 contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     /* Type declarations */
-    enum RaffleState {
+   enum RaffleState {
         OPEN,
         CALCULATING
     }
@@ -29,7 +29,7 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface {
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     uint64 private immutable i_subscriptionId;
     bytes32 private immutable i_gasLane;
-    uint32 private immutable i_callbackGasLimit;
+    uint32 private immutable i_callbac01kGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
