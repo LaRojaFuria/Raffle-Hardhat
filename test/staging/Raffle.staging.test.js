@@ -20,6 +20,11 @@ developmentChains.includes(network.name)
                   const startingTimeStamp = await raffle.getLastTimeStamp()
                   const accounts = await ethers.getSigners()
 
+                  console.log("Entering Raffle...")
+                  const tx = await raffle.enterRaffle({ value: raffleEntranceFee })
+                  await tx.wait(1)
+                  console.log("Entered Raffle!")
+
                   console.log("Setting up Listener...")
                   await new Promise(async (resolve, reject) => {
                       // setup listener before we enter the raffle
@@ -47,11 +52,13 @@ developmentChains.includes(network.name)
                               reject(error)
                           }
                       })
-                      // Then entering the raffle
-                      console.log("Entering Raffle...")
-                      const tx = await raffle.enterRaffle({ value: raffleEntranceFee })
-                      await tx.wait(1)
-                      console.log("Ok, time to wait...")
+                      
+                      // Simulate Chainlink Keeper calling the contract after the specified time interval
+                      console.log("Simulating Chainlink Keeper...")
+                      await network.provider.send("evm_increaseTime", [3600]) // Increase time by 1 hour
+                      await network.provider.send("evm_mine") // Mine a new block
+                      
+                      await raffle.performUpkeep("0x0");
                       const winnerStartingBalance = await accounts[0].getBalance()
 
                       // and this code WONT complete until our listener has finished listening!
