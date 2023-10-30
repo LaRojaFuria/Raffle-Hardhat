@@ -1,15 +1,19 @@
-const { ethers } = require("hardhat")
+const { ethers } = require("hardhat");
 
 async function enterRaffle() {
-    const raffle = await ethers.getContract("Raffle")
-    const entranceFee = await raffle.getEntranceFee()
-    await raffle.enterRaffle({ value: entranceFee + 1 })
-    console.log("Entered!")
+    const raffle = await ethers.getContract("Raffle");
+    const entranceFee = await raffle.getEntranceFee();
+
+    // Enter the raffle with the exact entrance fee
+    const tx = await raffle.enterRaffle({ value: entranceFee });
+    const receipt = await tx.wait();
+    
+    console.log("Entered!");
 }
 
 enterRaffle()
     .then(() => process.exit(0))
     .catch((error) => {
-        console.error(error)
-        process.exit(1)
-    })
+        console.error(error);
+        process.exit(1);
+    });

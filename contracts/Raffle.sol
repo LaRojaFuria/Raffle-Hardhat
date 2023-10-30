@@ -2,49 +2,75 @@
 
 pragma solidity ^0.8.7;
 
+// Import OpenZeppelin's upgradeable contracts and Chainlink interfaces
+import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/finance/PaymentSplitterUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/finance/PaymentSplitter.sol";
 
-/* Errors */
-error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
+// Custom errors for specific fail states
+error Raffle__UpkeepNotNeeded(
+    uint256 currentBalance,
+    uint256 numPlayers,
+    uint256 raffleState
+);
 error Raffle__TransferFailed();
 error Raffle__SendMoreToEnterRaffle();
 error Raffle__RaffleNotOpen();
+error Raffle__AddressNotAuthorized(string message);
+error Raffle__RafflePaused();
 
-/**@title A sample Raffle Contract
- * @author Patrick Collins
- * @notice This contract is for creating a sample raffle contract
- * @dev This implements the Chainlink VRF Version 2
+// Contract meta information
+/**@title A Raffle Contract
+ * @version 1.0.0
+ * @author Eric Carmical
+ * @notice This contract facilitates a decentralized raffle game, where participants can enter by sending MATIC. The raffle is automated by Chainlink Keepers and secured by Chainlink VRF.
+ * @dev This contract is built with upgradeability and pausability features. It utilizes Chainlink VRF Version 2 for secure randomness and Chainlink Keepers for automated maintenance tasks like picking winners and resetting the raffle state.
  */
-contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSplitter {
+
+// Main contract declaration inheriting various other contracts
+contract Raffle is
+    Initializable,
+    UUPSUpgradeable,
+    PausableUpgradeable,
+    PaymentSplitterUpgradeable,
+    VRFConsumerBaseV2,
+    AutomationCompatibleInterface
+{
     /* Type declarations */
-   enum RaffleState {
+
+    // Raffle state enum to manage different stages of the raffle
+    enum RaffleState {
         OPEN,
-        CALCULATING
+        CALCULATING,
+        PAUSED
     }
+
     /* State variables */
-    // Chainlink Aggregator Variables
+
+    // Chainlink Aggregator variables for MATIC/USD pricing
     address public maticUsdAggregatorAddress;
     AggregatorV3Interface public maticUsdAggregator;
 
-    // PaymentSplitter Variables
+    // PaymentSplitter variables for distributing rewards
     address[] public payees;
     uint256[] public shares;
     uint256 private s_totalShares;
 
-    // Chainlink VRF Variables
+    // Chainlink VRF variables for secure randomness
     VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
     uint64 private immutable i_subscriptionId;
     bytes32 private immutable i_gasLane;
-    uint32 private immutable i_callbac01kGasLimit;
+    uint32 private immutable i_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
-    // Lottery Variables
+    // Lottery-specific variables
     uint256 private immutable i_interval;
     uint256 private s_entranceFeeInMatic;
     uint256 private s_lastTimeStamp;
@@ -52,9 +78,8 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
     address payable[] private s_players;
     RaffleState private s_raffleState;
     uint256 public minimumEntrees = 100;
-    address private s_developerAddress;
-    address private s_adminAddress;
-    address private s_admin;
+    address private immutable i_developerAddress;
+    address private immutable i_adminAddress;
 
     /* Events */
     event RequestedRaffleWinner(uint256 indexed requestId);
@@ -63,19 +88,32 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
     event EntranceFeeSet(bool success, string message);
 
     /* Functions */
-    constructor(
+    function initialize(
         address _maticUsdAggregatorAddress,
         address _developerAddress,
         address _adminAddress,
         address vrfCoordinatorV2,
         uint64 subscriptionId,
-        bytes32 gasLane, // keyHash
+        bytes32 gasLane,
         uint256 interval,
         uint256 entranceFeeInMatic,
         uint32 callbackGasLimit
-    ) VRFConsumerBaseV2(vrfCoordinatorV2) PaymentSplitter(payees, shares) {
+    ) public initializer {
+        // Initialize VRFConsumerBaseV2 variables
+        __VRFConsumerBaseV2_init(vrfCoordinatorV2);
         i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
         i_gasLane = gasLane;
+
+        // Initialize PaymentSplitter variables
+        address[] memory initialPayees = new address[](2);
+        uint256[] memory initialShares = new uint256[](2);
+        initialPayees[0] = _developerAddress;
+        initialPayees[1] = _adminAddress;
+        initialShares[0] = 1;
+        initialShares[1] = 1;
+        __PaymentSplitter_init(initialPayees, initialShares);
+
+        // Initialize other state variables
         i_interval = interval;
         i_subscriptionId = subscriptionId;
         s_entranceFeeInMatic = entranceFeeInMatic;
@@ -84,17 +122,23 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
         i_callbackGasLimit = callbackGasLimit;
         maticUsdAggregatorAddress = _maticUsdAggregatorAddress;
         maticUsdAggregator = AggregatorV3Interface(maticUsdAggregatorAddress);
-        payees = [_developerAddress, _adminAddress];
-        shares = [1, 1];
-        s_developerAddress = _developerAddress;
-        s_adminAddress = _adminAddress;
-        s_admin = _adminAddress;
+        i_developerAddress = _developerAddress;
+        i_adminAddress = _adminAddress;
+
+        // Initialize Pausable and UUPSUpgradeable
+        __Pausable_init();
+        __UUPSUpgradeable_init();
     }
 
     function enterRaffle() public payable {
         // Check if the sent value is sufficient
         if (msg.value < s_entranceFeeInMatic) {
             revert Raffle__SendMoreToEnterRaffle();
+        }
+
+        //Check if the raffle is paused
+        if (s_raffleState == RaffleState.PAUSED) {
+            revert Raffle__RafflePaused();
         }
 
         // Check if the raffle is open
@@ -112,21 +156,22 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
     /**
      * @dev This is the function that the Chainlink Keeper nodes call
      * they look for `upkeepNeeded` to return True.
-     * the following should be true for this to return true:
-     * 1. The time interval has passed between raffle runs.
-     * 2. The lottery is open.
-     * 3. The contract has MATIC.
-     * 4. Implicity, your subscription is funded with LINK.
      */
     function checkUpkeep(
         bytes memory /* checkData */
-    ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
+    )
+        public
+        view
+        override
+        returns (bool upkeepNeeded, bytes memory /* performData */)
+    {
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
         bool hasPlayers = s_players.length >= 100;
-        bool hasBalance = address(this).balance >= (s_entranceFeeInMatic * s_players.length);
+        bool hasBalance = address(this).balance >=
+            (s_entranceFeeInMatic * s_players.length);
         upkeepNeeded = (timePassed && isOpen && hasBalance && hasPlayers);
-        return (upkeepNeeded, "0x0"); // can we comment this out?
+        return (upkeepNeeded, "0x0");
     }
 
     /**
@@ -135,7 +180,6 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
      */
     function performUpkeep(bytes calldata /* performData */) external override {
         (bool upkeepNeeded, ) = checkUpkeep("");
-        // require(upkeepNeeded, "Upkeep not needed");
         if (!upkeepNeeded) {
             revert Raffle__UpkeepNotNeeded(
                 address(this).balance,
@@ -151,7 +195,6 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
             i_callbackGasLimit,
             NUM_WORDS
         );
-        // Quiz... is this redundant?
         emit RequestedRaffleWinner(requestId);
     }
 
@@ -181,7 +224,10 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
         uint256 contractBalance = address(this).balance;
         for (uint256 i = 0; i < payees.length; i++) {
             uint256 shareAmount = (contractBalance * shares[i]) / totalShares;
-            payable(payees[i]).transfer(shareAmount);
+            (bool success, ) = payable(payees[i]).call{value: shareAmount}("");
+            if (!success) {
+                revert Raffle__TransferFailed();
+            }
         }
 
         // Resetting the players array
@@ -192,7 +238,9 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
 
         // Reset payees and shares arrays to their initial state (developer and admin)
         delete payees;
-        delete shares;
+        payees = [i_developerAddress, i_adminAddress];
+        shares = [1, 1];
+        s_totalShares = 2;
 
         s_recentWinner = recentWinner;
 
@@ -222,13 +270,39 @@ contract Raffle is VRFConsumerBaseV2, AutomationCompatibleInterface, PaymentSpli
         emit WinnerPicked(recentWinner);
     }
 
+    // Function to pause the lottery
+    function pauseLottery() external whenNotPaused {
+        if (msg.sender != i_adminAddress) {
+            revert Raffle__AddressNotAuthorized(
+                "Only admin can pause the lottery"
+            );
+        }
+        _pause();
+        s_raffleState = RaffleState.PAUSED;
+    }
+
+    // Function to unpause the lottery
+    function unpauseLottery() external whenPaused {
+        if (msg.sender != i_adminAddress) {
+            revert Raffle__AddressNotAuthorized(
+                "Only admin can unpause the lottery"
+            );
+        }
+        _unpause();
+        s_raffleState = RaffleState.OPEN;
+    }
+
     // Function to update Chainlink aggregator address
     function updateAggregatorAddress(address _newAggregatorAddress) external {
-        if (msg.sender != s_admin) {
-            revert NotAuthorized("Only the admin can update the aggregator address");
+        if (msg.sender != i_adminAddress) {
+            revert Raffle__AddressNotAuthorized(
+                "Only the admin can update the aggregator address"
+            );
         }
         if (_newAggregatorAddress == address(0)) {
-            revert InvalidAddress("Provided aggregator address is the zero address");
+            revert InvalidAddress(
+                "Provided aggregator address is the zero address"
+            );
         }
         maticUsdAggregatorAddress = _newAggregatorAddress;
         maticUsdAggregator = AggregatorV3Interface(maticUsdAggregatorAddress);
