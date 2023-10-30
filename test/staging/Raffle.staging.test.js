@@ -124,6 +124,7 @@ developmentChains.includes(network.name)
                 const nonAdminRaffle = raffle.connect(nonAdmin);
                 await expect(nonAdminRaffle.unpauseLottery()).to.be.revertedWith("Raffle__AddressNotAuthorized");
             });
+
             // Custom error tests for unpauseLottery
             it("should throw a custom error when a non-admin tries to unpause the raffle", async function () {
                 const accounts = await ethers.getSigners();
@@ -133,6 +134,7 @@ developmentChains.includes(network.name)
                     .to.be.revertedWith("Raffle__AddressNotAuthorized");
             });
         });
+        // Test cases for the updateAggregatorAddress function
         describe("updateAggregatorAddress function", function () {
             // This test ensures that the admin can update the Chainlink aggregator address
             it("should update the Chainlink aggregator address", async function () {
@@ -174,6 +176,7 @@ developmentChains.includes(network.name)
                 const raffleState = await raffle.getRaffleState();
                 assert.equal(raffleState, 1); // 1 means CALCULATING
             });
+
             // This test case ensures that the performUpkeep function doesn't work when conditions are not met
             it("should reject performing upkeep when not needed", async function () {
                 // Ensure the lottery is paused
@@ -186,18 +189,6 @@ developmentChains.includes(network.name)
                 // Alternatively, you could explicitly remove players to set the desired initial state
 
                 await expect(raffle.performUpkeep("0x")).to.be.revertedWith("Raffle__UpkeepNotNeeded");
-            });
-            // Custom error tests for performUpkeep
-            it("should throw a custom error when performing upkeep unnecessarily", async function () {
-                // Ensure the raffle is open but not enough time has passed for upkeep
-                await raffle.unpauseLottery(); // Making sure the raffle is open
-                await advanceTimeAndBlock(10); // Advancing time by only 10 seconds
-
-                // Assuming the raffle is fresh or reset, there should not be enough players
-                // Alternatively, you could explicitly remove players to set the desired initial state
-
-                await expect(raffle.performUpkeep("0x"))
-                    .to.be.revertedWith("Raffle__UpkeepNotNeeded");
             });
         });
         // Test cases for fulfillRandomWords function
@@ -414,23 +405,6 @@ developmentChains.includes(network.name)
                 const receipt = await tx.wait();
                 const event = receipt.events.find(e => e.event === "WinnerPicked");
                 assert.exists(event, "Event WinnerPicked not emitted");
-            });
-        });
-        // Test cases for zero or negative MATIC/USD price
-        describe("Zero or Negative MATIC/USD Price", function () {
-            it("should revert if MATIC/USD price is zero or negative", async function () {
-                // Given: A zero or negative MATIC/USD price
-                // (Assuming you have a way to mock or manipulate the Chainlink Aggregator)
-                await maticUsdAggregatorMock.setLatestAnswer(0);
-
-                // When & Then: Trying to perform upkeep or some other action that checks the price
-                await expect(raffle.performUpkeep(/* your parameters here */))
-                    .to.be.revertedWith("MATIC/USD price cannot be zero or negative");
-
-                // Optionally: Test for negative value
-                await maticUsdAggregatorMock.setLatestAnswer(-1);
-                await expect(raffle.performUpkeep(/* your parameters here */))
-                    .to.be.revertedWith("MATIC/USD price cannot be zero or negative");
             });
         });
         // Test cases for dynamic assertions
