@@ -16,7 +16,7 @@ developmentChains.includes(network.name)
             raffleEntranceFee = await raffle.getEntranceFee();
         });
 
-    // Test cases for initializations and upgrades
+        // Test cases for initializations and upgrades
         describe("Initializations and Upgrades", function () {
             it("should correctly initialize and allow upgrades", async function () {
                 try {
@@ -134,7 +134,7 @@ developmentChains.includes(network.name)
                     .to.be.revertedWith("Raffle__AddressNotAuthorized");
             });
         });
-        // Test cases for the updateAggregatorAddress function
+        // Test cases for updateAggregatorAddress function
         describe("updateAggregatorAddress function", function () {
             // This test ensures that the admin can update the Chainlink aggregator address
             it("should update the Chainlink aggregator address", async function () {
@@ -152,7 +152,7 @@ developmentChains.includes(network.name)
                 await expect(nonAdminRaffle.updateAggregatorAddress("0xNewAggregatorAddress")).to.be.revertedWith("Raffle__AddressNotAuthorized");
             });
         });
-        // Test cases for the performUpkeep function        
+        // Test cases for performUpkeep function        
         describe("performUpkeep function", function () {
             // This test case ensures that the performUpkeep function works when conditions are met
             it("should perform upkeep when conditions are met", async function () {
@@ -176,7 +176,6 @@ developmentChains.includes(network.name)
                 const raffleState = await raffle.getRaffleState();
                 assert.equal(raffleState, 1); // 1 means CALCULATING
             });
-
             // This test case ensures that the performUpkeep function doesn't work when conditions are not met
             it("should reject performing upkeep when not needed", async function () {
                 // Ensure the lottery is paused
@@ -190,76 +189,17 @@ developmentChains.includes(network.name)
 
                 await expect(raffle.performUpkeep("0x")).to.be.revertedWith("Raffle__UpkeepNotNeeded");
             });
-        });
-        // Test cases for fulfillRandomWords function
-        describe("fulfillRandomWords function", function () {
-            it("should pick a winner and distribute rewards", async function () {
-                // Setup
-                const vrfCoordinator = await ethers.getContract('VRFCoordinatorV2Mock');
+            // Custom error tests for performUpkeep
+            it("should throw a custom error when performing upkeep unnecessarily", async function () {
+                // Ensure the raffle is open but not enough time has passed for upkeep
+                await raffle.unpauseLottery(); // Making sure the raffle is open
+                await advanceTimeAndBlock(10); // Advancing time by only 10 seconds
 
-                // 1. Start by entering multiple players into the raffle
-                await enterPlayers(3);
+                // Assuming the raffle is fresh or reset, there should not be enough players
+                // Alternatively, you could explicitly remove players to set the desired initial state
 
-                // 2. Manually call performUpkeep to switch the state to CALCULATING
-                const tx = await raffle.performUpkeep("0x0");
-                const receipt = await tx.wait();
-                const requestEvent = receipt.events.find(e => e.event === "RequestedRaffleWinner");
-                const requestId = requestEvent.args.requestId;
-
-                // 3. Use the VRFCoordinatorV2Mock to simulate fulfillRandomWords
-                const randomWords = [1];
-                await vrfCoordinator.callBackWithRandomness(requestId, randomWords[0], raffle.address);
-
-                // 4. Fetch the recent winner
-                const recentWinner = await raffle.getRecentWinner();
-
-                // 5. Validate that a winner was picked
-                assert.notEqual(recentWinner, "0x0000000000000000000000000000000000000000");
-
-                // 6. Validate that the contract balance is zero after distributing rewards
-                const contractBalance = await ethers.provider.getBalance(raffle.address);
-                assert.equal(contractBalance, 0);
-
-                // 7. Validate that the raffle state is back to OPEN
-                const raffleState = await raffle.getRaffleState();
-                assert.equal(raffleState, 0);  // 0 means OPEN
-
-                // 8. Validate that the last time stamp was updated
-                const lastTimeStamp = await raffle.getLastTimeStamp();
-                assert.isAbove(lastTimeStamp.toNumber(), initialTimeStamp.toNumber());
-            });
-        });
-        // Test cases for read-only functions       
-        describe("read-only functions", function () {
-            // Run some setup code to put the contract into a specific state
-            beforeEach(async function () {
-                // Unpause the lottery to ensure that it's open
-                await raffle.unpauseLottery();
-
-                // Simulate 10 players entering the raffle
-                const accounts = await ethers.getSigners();
-                for (let i = 0; i < 10; i++) {
-                    const player = accounts[i];
-                    const playerRaffle = raffle.connect(player);
-                    await playerRaffle.enterRaffle({ value: raffleEntranceFee });
-                }
-            });
-
-            // This test ensures that the read-only functions return expected values
-            it("should return correct values", async function () {
-                const numWords = await raffle.getNumWords();
-                const requestConfirmations = await raffle.getRequestConfirmations();
-                const recentWinner = await raffle.getRecentWinner();
-                const lastTimeStamp = await raffle.getLastTimeStamp();
-                const interval = await raffle.getInterval();
-                const numberOfPlayers = await raffle.getNumberOfPlayers();
-
-                assert.equal(numWords, 1);  // Assuming the number of words for Chainlink request is 1
-                assert.equal(requestConfirmations, 3);  // Assuming 3 confirmations are required
-                assert.equal(recentWinner, "0xYourExpectedRecentWinnerAddress");  // Replace with the address you expect
-                assert.isAbove(lastTimeStamp, 0);  // Should be greater than 0 after the raffle has started
-                assert.equal(interval, 86400);  // Assuming a 1-day interval
-                assert.equal(numberOfPlayers, 10);  // 10 players have entered
+                await expect(raffle.performUpkeep("0x"))
+                    .to.be.revertedWith("Raffle__UpkeepNotNeeded");
             });
         });
         // Test cases for checkUpkeep function               
@@ -301,6 +241,45 @@ developmentChains.includes(network.name)
                 assert.isFalse(upkeepNeeded);
             });
         });
+
+        // Test cases for fulfillRandomWords function
+        describe("fulfillRandomWords function", function () {
+            it("should pick a winner and distribute rewards", async function () {
+                // Setup
+                const vrfCoordinator = await ethers.getContract('VRFCoordinatorV2Mock');
+
+                // 1. Start by entering multiple players into the raffle
+                await enterPlayers(3);
+
+                // 2. Manually call performUpkeep to switch the state to CALCULATING
+                const tx = await raffle.performUpkeep("0x0");
+                const receipt = await tx.wait();
+                const requestEvent = receipt.events.find(e => e.event === "RequestedRaffleWinner");
+                const requestId = requestEvent.args.requestId;
+
+                // 3. Use the VRFCoordinatorV2Mock to simulate fulfillRandomWords
+                const randomWords = [1];
+                await vrfCoordinator.callBackWithRandomness(requestId, randomWords[0], raffle.address);
+
+                // 4. Fetch the recent winner
+                const recentWinner = await raffle.getRecentWinner();
+
+                // 5. Validate that a winner was picked
+                assert.notEqual(recentWinner, "0x0000000000000000000000000000000000000000");
+
+                // 6. Validate that the contract balance is zero after distributing rewards
+                const contractBalance = await ethers.provider.getBalance(raffle.address);
+                assert.equal(contractBalance, 0);
+
+                // 7. Validate that the raffle state is back to OPEN
+                const raffleState = await raffle.getRaffleState();
+                assert.equal(raffleState, 0);  // 0 means OPEN
+
+                // 8. Validate that the last time stamp was updated
+                const lastTimeStamp = await raffle.getLastTimeStamp();
+                assert.isAbove(lastTimeStamp.toNumber(), initialTimeStamp.toNumber());
+            });
+        });
         // Test cases for entrance fee updates
         describe("Entrance Fee Update", function () {
             it("should update the entrance fee based on MATIC/USD price", async function () {
@@ -312,16 +291,47 @@ developmentChains.includes(network.name)
                 const newMaticUsdPrice = 2;  // Replace this with the new simulated price
                 await maticUsdAggregator.setLatestAnswer(newMaticUsdPrice);  // This assumes your mock allows setting the price
 
-                // And: We simulate the fulfillRandomWords function to trigger an entrance fee update
-                // (Reuse the same logic for simulating fulfillRandomWords here as in your previous test)
-
                 // Then: The entrance fee should be updated
                 const newEntranceFee = await raffle.getEntranceFee();
                 assert.notEqual(initialEntranceFee.toString(), newEntranceFee.toString(), "The entrance fee should be updated");
 
                 // Optionally, you can add more specific assertions based on how exactly your contract updates the entrance fee
-                const expectedNewEntranceFee = newMaticUsdPrice * 10;  // Replace this with the exact formula used in your contract
+                const expectedNewEntranceFee = ethers.utils.parseUnits((10 / newMaticUsdPrice).toString(), 18);  // Replace this with the exact formula used in your contract
                 assert.equal(newEntranceFee.toString(), expectedNewEntranceFee.toString(), "The entrance fee should match the expected new fee");
+            });
+        });
+
+        // Test cases for read-only functions       
+        describe("read-only functions", function () {
+            // Run some setup code to put the contract into a specific state
+            beforeEach(async function () {
+                // Unpause the lottery to ensure that it's open
+                await raffle.unpauseLottery();
+
+                // Simulate 10 players entering the raffle
+                const accounts = await ethers.getSigners();
+                for (let i = 0; i < 10; i++) {
+                    const player = accounts[i];
+                    const playerRaffle = raffle.connect(player);
+                    await playerRaffle.enterRaffle({ value: raffleEntranceFee });
+                }
+            });
+
+            // This test ensures that the read-only functions return expected values
+            it("should return correct values", async function () {
+                const numWords = await raffle.getNumWords();
+                const requestConfirmations = await raffle.getRequestConfirmations();
+                const recentWinner = await raffle.getRecentWinner();
+                const lastTimeStamp = await raffle.getLastTimeStamp();
+                const interval = await raffle.getInterval();
+                const numberOfPlayers = await raffle.getNumberOfPlayers();
+
+                assert.equal(numWords, 1);  // Assuming the number of words for Chainlink request is 1
+                assert.equal(requestConfirmations, 3);  // Assuming 3 confirmations are required
+                assert.equal(recentWinner, "0xYourExpectedRecentWinnerAddress");  // Replace with the address you expect
+                assert.isAbove(lastTimeStamp, 0);  // Should be greater than 0 after the raffle has started
+                assert.equal(interval, 86400);  // Assuming a 1-day interval
+                assert.equal(numberOfPlayers, 10);  // 10 players have entered
             });
         });
         // Test cases for zero or negative MATIC/USD price
@@ -341,6 +351,7 @@ developmentChains.includes(network.name)
                     .to.be.revertedWith("MATIC/USD price cannot be zero or negative");
             });
         });
+
         // Test cases for shares and PaymentSplitter
         describe("Shares and PaymentSplitter", function () {
             it("should distribute funds based on shares", async function () {
@@ -376,6 +387,7 @@ developmentChains.includes(network.name)
             });
         });
         // Test cases for event emissions     
+        // Test cases for event emissions
         describe("Events", function () {
             it("should emit RaffleEnter event when a user enters the raffle", async function () {
                 const tx = await raffle.enterRaffle({ value: raffleEntranceFee });
@@ -407,6 +419,7 @@ developmentChains.includes(network.name)
                 assert.exists(event, "Event WinnerPicked not emitted");
             });
         });
+
         // Test cases for dynamic assertions
         describe("Dynamic Assertions", function () {
             it("should update lastTimeStamp dynamically", async function () {
@@ -416,6 +429,7 @@ developmentChains.includes(network.name)
                 assert.equal(newTimeStamp.toNumber(), initialTimeStamp.toNumber() + 3600);
             });
         });
+
         // Test cases for additional scenarios
         describe("Additional Scenarios", function () {
             it("should behave correctly when paused, time advances, and then unpaused", async function () {
@@ -426,6 +440,7 @@ developmentChains.includes(network.name)
                 assert.equal(raffleState, 0); // 0 means OPEN
             });
         });
+
 
     });
 
