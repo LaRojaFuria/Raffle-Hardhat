@@ -7,8 +7,9 @@ require("hardhat-contract-sizer");
 require("dotenv").config();
 
 // Check for missing environment variables
-if(!process.env.PRIVATE_KEY || !process.env.MAINNET_RPC_URL) {
+if (!process.env.PRIVATE_KEY || !process.env.MAINNET_RPC_URL) {
   throw new Error("Missing environment variables");
+}
 
 const DEPLOYER_ADMIN_ADDRESS = process.env.DEPLOYER_ADMIN_ADDRESS || "0xYourDefaultAdminAddressHere";
 const DEVELOPER_ADDRESS = process.env.DEVELOPER_ADDRESS || "0xYourDefaultDeveloperAddressHere";
@@ -39,45 +40,4 @@ module.exports = {
       accounts: [PRIVATE_KEY],
       saveDeployments: true,
       chainId: 137,
-    },
-  },
-  etherscan: {
-    apiKey: {
-      mainnet: ETHERSCAN_API_KEY,
-      polygon: POLYGONSCAN_API_KEY,
-    },
-  },
-  gasReporter: {
-    enabled: REPORT_GAS,
-    currency: "USD",
-    outputFile: "gas-report.txt",
-  },
-  contractSizer: {
-    runOnCompile: false,
-    only: ["Raffle"],
-  },
-  namedAccounts: {
-    deployer: {
-      default: DEPLOYER_ADMIN_ADDRESS,
-    },
-    player: {
-      default: 1,
-    },
-    admin: {
-      default: DEPLOYER_ADMIN_ADDRESS,
-    },
-    developer: {
-      default: DEVELOPER_ADDRESS,
-    },
-  },
-  solidity: {
-    compilers: [
-      {
-        version: "0.8.7",
-      },
-    ],
-  },
-  mocha: {
-    timeout: 500000,
-  },
-}};
+   

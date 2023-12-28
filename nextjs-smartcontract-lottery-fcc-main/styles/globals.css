@@ -1,3 +1,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.lotteryBackground {
+    background-image: url('/lotteryBackground.png');
+    background-size: cover;
+    background-position: center;
+    min-height: 100vh;
+    /* Ensures full view height coverage */
+    background-repeat: no-repeat;
+    /* Prevents image from repeating */
+    background-attachment: fixed;
+    /* Fixed background on scroll */
+
+    /* Fallback background color in case the image doesn't load */
+    background-color: #f8f9fa;
+    /* Choose a color that matches your theme */
+
+    /* High contrast text color for readability, adjust as needed */
+    color: #333;
+    /* Or use a Tailwind text color class in your HTML */
+}
+
+/* Media queries for responsive design */
+@media (max-width: 768px) {
+    .lotteryBackground {
+        background-position: top;
+    }
+}
+
+@media (max-width: 480px) {
+    .lotteryBackground {
+        background-position: top;
+    }
+}
+
+/* Add any additional customizations below */

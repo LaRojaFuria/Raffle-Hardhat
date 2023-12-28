@@ -96,7 +96,6 @@ contract Raffle is
         uint64 subscriptionId,
         bytes32 gasLane,
         uint256 interval,
-        uint256 entranceFeeInMatic,
         uint32 callbackGasLimit
     ) public initializer {
         // Initialize VRFConsumerBaseV2 variables
@@ -116,18 +115,26 @@ contract Raffle is
         // Initialize other state variables
         i_interval = interval;
         i_subscriptionId = subscriptionId;
-        s_entranceFeeInMatic = entranceFeeInMatic;
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
         i_callbackGasLimit = callbackGasLimit;
         maticUsdAggregatorAddress = _maticUsdAggregatorAddress;
-        maticUsdAggregator = AggregatorV3Interface(maticUsdAggregatorAddress);
         i_developerAddress = _developerAddress;
         i_adminAddress = _adminAddress;
 
         // Initialize Pausable and UUPSUpgradeable
         __Pausable_init();
         __UUPSUpgradeable_init();
+
+        // Fetch MATIC/USD price to set initial entrance fee
+        maticUsdAggregator = AggregatorV3Interface(_maticUsdAggregatorAddress);
+        (, int256 price, , , ) = maticUsdAggregator.latestRoundData();
+        if (price <= 0) {
+            revert("Invalid MATIC/USD price");
+        }
+        // Calculate entrance fee based on MATIC/USD price for 10 USD
+        // Assuming price is in 8 decimal places and you want 10 USD worth of MATIC
+        s_entranceFeeInMatic = (10 * 1e18) / uint256(price);
     }
 
     function enterRaffle() public payable {
@@ -253,15 +260,13 @@ contract Raffle is
             uint80 answeredInRound
         ) = maticUsdAggregator.latestRoundData();
 
-        // Check for zero MATIC/USD price and revert or set a default value
+        // Check for zero or negative MATIC/USD price and revert if invalid
         if (answer <= 0) {
-            revert("MATIC/USD price cannot be zero or negative");
-            // Alternatively, you can set a default entrance fee
-            // s_entranceFeeInMatic = <default_value>;
+            revert("Invalid MATIC/USD price");
         }
 
         // Update the entrance fee for the next round
-        s_entranceFeeInMatic = uint256(answer) * 10;
+        s_entranceFeeInMatic = uint256(answer) * 10; // 10 USD equivalent in MATIC
 
         // Re-open the raffle for the next round
         s_raffleState = RaffleState.OPEN;

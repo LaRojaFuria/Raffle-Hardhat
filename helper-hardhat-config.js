@@ -12,6 +12,7 @@ const networkConfig = {
     keepersUpdateInterval: "3600",
     raffleEntranceFee: ethers.utils.parseEther("0.01"),
     callbackGasLimit: "500000",
+    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Local-Testing>",
   },
   11155111: {
     name: "sepolia",
@@ -21,10 +22,12 @@ const networkConfig = {
     raffleEntranceFee: ethers.utils.parseEther("0.01"),
     callbackGasLimit: "500000",
     vrfCoordinatorV2: "0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625",
+    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Sepolia>",
   },
   1: {
     name: "mainnet",
     keepersUpdateInterval: "3600",
+    // Add other mainnet specific configurations if needed
   },
   137: {
     name: "polygon",
@@ -34,6 +37,7 @@ const networkConfig = {
     raffleEntranceFee: ethers.utils.parseEther("0.01"),
     callbackGasLimit: "500000",
     vrfCoordinatorV2: "<Your-VRF-Coordinator-Address-for-Polygon>",
+    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Polygon>",
   },
 };
 

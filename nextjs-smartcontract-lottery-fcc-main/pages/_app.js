@@ -6,7 +6,9 @@ function MyApp({ Component, pageProps }) {
   return (
     <MoralisProvider initializeOnMount={false}>
       <NotificationProvider>
-        <Component {...pageProps} />
+        <div className="lotteryBackground">
+          <Component {...pageProps} />
+        </div>
       </NotificationProvider>
     </MoralisProvider>
   );
