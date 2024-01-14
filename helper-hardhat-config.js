@@ -12,7 +12,7 @@ const networkConfig = {
     keepersUpdateInterval: "3600",
     raffleEntranceFee: ethers.utils.parseEther("0.01"),
     callbackGasLimit: "500000",
-    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Local-Testing>",
+    maticUsdAggregatorAddress: process.env.LOCAL_MATIC_USD_AGGREGATOR_ADDRESS,
   },
   11155111: {
     name: "sepolia",
@@ -21,8 +21,8 @@ const networkConfig = {
     keepersUpdateInterval: "3600",
     raffleEntranceFee: ethers.utils.parseEther("0.01"),
     callbackGasLimit: "500000",
-    vrfCoordinatorV2: "0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625",
-    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Sepolia>",
+    vrfCoordinatorV2: process.env.SEPOLIA_VRF_COORDINATOR,
+    maticUsdAggregatorAddress: process.env.SEPOLIA_MATIC_USD_AGGREGATOR_ADDRESS,
   },
   1: {
     name: "mainnet",
@@ -31,14 +31,15 @@ const networkConfig = {
   },
   137: {
     name: "polygon",
-    subscriptionId: "<Your-Chainlink-Subscription-ID-for-Polygon>",
-    gasLane: "0x474e34a077df58807dbe9c96d3c009b23b3c6d0cce433e59bbf5b34f823bc56c",
+    subscriptionId: process.env.POLYGON_CHAINLINK_SUBSCRIPTION_ID,
+    gasLane: process.env.POLYGON_GAS_LANE,
     keepersUpdateInterval: "3600",
-    raffleEntranceFee: ethers.utils.parseEther("0.01"),
-    callbackGasLimit: "500000",
-    vrfCoordinatorV2: "<Your-VRF-Coordinator-Address-for-Polygon>",
-    maticUsdAggregatorAddress: "<Your-Chainlink-Aggregator-Address-for-Polygon>",
+    raffleEntranceFee: ethers.utils.parseEther(process.env.POLYGON_ENTRANCE_FEE),
+    callbackGasLimit: process.env.POLYGON_CALLBACK_GAS_LIMIT,
+    vrfCoordinatorV2: process.env.POLYGON_VRF_COORDINATOR,
+    maticUsdAggregatorAddress: process.env.POLYGON_MATIC_USD_AGGREGATOR_ADDRESS,
   },
+  // Add any other network configurations here
 };
 
 const developmentChains = ["hardhat", "localhost"];

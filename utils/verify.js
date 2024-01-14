@@ -13,7 +13,9 @@ const verify = async (contractAddress, args, isUpgradeable = false, proxyAddress
 
   if (isUpgradeable) {
     await verifyContract(contractAddress, args, "implementation contract");
-    await verifyContract(proxyAddress, [], "proxy contract");
+    if (proxyAddress) {
+      await verifyContract(proxyAddress, [], "proxy contract");
+    }
   } else {
     await verifyContract(contractAddress, args, "contract");
   }

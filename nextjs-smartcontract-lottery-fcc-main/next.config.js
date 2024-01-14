@@ -9,15 +9,12 @@ const nextConfig = {
     loader: "custom",
     // Define any custom image loader configuration here, if needed.
   },
-  // Enabling HTTP compression for improved performance.
-  compress: true,
-  // Disabling the X-Powered-By header for security reasons.
-  poweredByHeader: false,
-  // Defining custom HTTP headers for enhanced security.
+  compress: true, // Enabling HTTP compression for improved performance.
+  poweredByHeader: false, // Disabling the X-Powered-By header for security reasons.
   async headers() {
     return [
       {
-        source: '/(.*)',
+        source: '/(.*)', // Applying headers to all routes
         headers: securityHeaders,
       },
     ];

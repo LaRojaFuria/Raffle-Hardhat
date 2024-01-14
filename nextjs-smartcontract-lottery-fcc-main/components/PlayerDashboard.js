@@ -1,24 +1,28 @@
+import React, { useState, useEffect } from "react";
 import { useMoralis, useWeb3Contract } from "react-moralis";
-import { useEffect, useState } from "react";
+import { abi, contractAddresses } from "../constants";
+import Header from "../components/Header";
 import { ethers } from "ethers";
-import { contractAddresses, abi } from "../constants";
 
 export default function PlayerDashboard() {
-    const { user, isAuthenticated, chainId: chainIdHex } = useMoralis();
-    const [participationHistory, setParticipationHistory] = useState([]);
-    const [entranceFee, setEntranceFee] = useState("0");
-    const [numberOfPlayers, setNumberOfPlayers] = useState("0");
-    const [recentWinner, setRecentWinner] = useState("");
+    const { isWeb3Enabled, chainId: chainIdHex, account } = useMoralis();
     const chainId = parseInt(chainIdHex);
     const raffleAddress = chainId in contractAddresses ? contractAddresses[chainId][0] : null;
 
+    // State hooks for player-specific information
+    const [entranceFee, setEntranceFee] = useState("0");
+    const [numberOfPlayers, setNumberOfPlayers] = useState("0");
+    const [recentWinner, setRecentWinner] = useState("");
+    const [playerHistory, setPlayerHistory] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    // Web3 Contract interaction setup for player functions
     const { runContractFunction: getPlayerHistory } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
         functionName: "getPlayerHistory",
-        params: { player: user?.get("ethAddress") },
+        params: { player: account },
     });
-
     const { runContractFunction: getEntranceFee } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
@@ -26,7 +30,7 @@ export default function PlayerDashboard() {
         params: {},
     });
 
-    const { runContractFunction: getPlayersNumber } = useWeb3Contract({
+    const { runContractFunction: getNumberOfPlayers } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
         functionName: "getNumberOfPlayers",
@@ -41,51 +45,66 @@ export default function PlayerDashboard() {
     });
 
     useEffect(() => {
-        if (isAuthenticated && user) {
-            updateUI();
+        if (isWeb3Enabled) {
+            updateUI().catch(console.error);
         }
-    }, [user, isAuthenticated]);
+    }, [isWeb3Enabled, raffleAddress]);
 
     async function updateUI() {
-        const history = await getPlayerHistory();
-        setParticipationHistory(history);
+        try {
+            setIsLoading(true);
+            const fee = ethers.utils.formatEther(await getEntranceFee());
+            const playersNumber = (await getNumberOfPlayers()).toString();
+            const winner = await getRecentWinner();
+            const history = await getPlayerHistory();
 
-        const fee = await getEntranceFee();
-        setEntranceFee(ethers.utils.formatUnits(fee, "ether"));
-
-        const playersNum = await getPlayersNumber();
-        setNumberOfPlayers(playersNum.toString());
-
-        const winner = await getRecentWinner();
-        setRecentWinner(winner);
+            setEntranceFee(fee);
+            setNumberOfPlayers(playersNumber);
+            setRecentWinner(winner);
+            setPlayerHistory(history);
+        } catch (error) {
+            console.error("Error updating UI:", error);
+        } finally {
+            setIsLoading(false);
+        }
     }
 
-    if (!isAuthenticated) {
-        return <div>Please connect your wallet to access the dashboard.</div>;
+    if (!isWeb3Enabled) {
+        return <div>Please connect to a supported network.</div>;
     }
 
     return (
         <div className="p-5">
-            <h1 className="text-xl font-bold mb-4">Player Dashboard</h1>
-            <h2>Welcome, {user.get("username")}</h2>
-            <div>
-                <h3 className="text-lg font-bold">Your Participation History</h3>
-                {participationHistory.length === 0 ? (
-                    <p>You have not participated in any lotteries yet.</p>
-                ) : (
-                    participationHistory.map((entry, index) => (
-                        <div key={index}>
-                            <p>Entry {index + 1}: {entry}</p>
-                        </div>
-                    ))
-                )}
-            </div>
-            <div>
-                <h3 className="text-lg font-bold">Raffle Information</h3>
-                <p>Entrance Fee: {entranceFee} MATIC</p>
-                <p>Number of Players: {numberOfPlayers}</p>
-                <p>Recent Winner: {recentWinner}</p>
-            </div>
+            <Header />
+            {isLoading ? (
+                <p>Loading...</p>
+            ) : (
+                <>
+                    <h1 className="text-xl font-bold">Player Dashboard</h1>
+                    <p>Connected Address: {account}</p>
+                    <div className="mt-3">
+                        <h2 className="text-lg font-bold">Your Participation History</h2>
+                        {playerHistory.length === 0
+
+                        ? <p>You have not participated in any lotteries yet.</p>
+                        : playerHistory.map((entry, index) => (
+                            <div key={index}>
+                                <p>Lottery Entry {index + 1}: {entry}</p>
+                            </div>
+                        ))
+                    }
+                    </div>
+                    <div className="mt-3">
+                        <h2 className="text-lg font-bold">Lottery Information</h2>
+                        <p>Current Entrance Fee: {entranceFee} MATIC</p>
+                        <p>Number of Players: {numberOfPlayers}</p>
+                        <p>Most Recent Winner: {recentWinner}</p>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
+
+
+

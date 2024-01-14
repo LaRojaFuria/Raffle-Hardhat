@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useMoralis, useWeb3Contract } from "react-moralis";
 import { abi, contractAddresses } from "../constants";
 import { ethers } from "ethers";
+import Header from "../components/Header";
 
 export default function AdminPanel() {
     const { isWeb3Enabled, chainId: chainIdHex } = useMoralis();
@@ -14,8 +15,6 @@ export default function AdminPanel() {
     const [currentEntranceFee, setCurrentEntranceFee] = useState("0");
     const [currentNumberOfPlayers, setCurrentNumberOfPlayers] = useState("0");
     const [currentRecentWinner, setCurrentRecentWinner] = useState("");
-    const [currentMinEntries, setCurrentMinEntries] = useState("0");
-    const [newMinEntries, setNewMinEntries] = useState("");
 
     // Web3 Contract interaction setup for admin functions
     const { runContractFunction: getRaffleState } = useWeb3Contract({
@@ -43,12 +42,17 @@ export default function AdminPanel() {
         abi: abi,
         contractAddress: raffleAddress,
         functionName: "updateAggregatorAddress",
-        params: {
-            _newAggregatorAddress: newAggregatorAddress,
-        },
+        params: { _newAggregatorAddress: newAggregatorAddress },
     });
 
     // Additional contract function setups for fetching data
+    const { runContractFunction: fetchEntranceFee } = useWeb3Contract({
+        abi: abi,
+        contractAddress: raffleAddress,
+        functionName: "getEntranceFee",
+        params: {},
+    });
+
     const { runContractFunction: fetchNumberOfPlayers } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
@@ -63,43 +67,28 @@ export default function AdminPanel() {
         params: {},
     });
 
-    const { runContractFunction: getMinEntries } = useWeb3Contract({
-        abi: abi,
-        contractAddress: raffleAddress,
-        functionName: "minimumEntrees",
-        params: {},
-    });
-
-    const { runContractFunction: setMinEntries } = useWeb3Contract({
-        abi: abi,
-        contractAddress: raffleAddress,
-        functionName: "setMinimumEntrees",
-        params: {
-            _newMinEntries: ethers.utils.parseUnits(newMinEntries || "0", "wei"),
-        },
-    });
-
-    // Function to update UI values based on contract data
-    async function updateUI() {
-        const stateFromContract = (await getRaffleState()).toString();
-        const numberOfPlayers = (await fetchNumberOfPlayers()).toString();
-        const recentWinner = await fetchRecentWinner();
-        const minEntriesFromContract = (await getMinEntries()).toString();
-
-        setRaffleState(stateFromContract);
-        setCurrentNumberOfPlayers(numberOfPlayers);
-        setCurrentRecentWinner(recentWinner);
-        setCurrentMinEntries(minEntriesFromContract);
-    }
-
     useEffect(() => {
         if (isWeb3Enabled) {
             updateUI();
         }
     }, [isWeb3Enabled]);
 
+    async function updateUI() {
+        const stateFromContract = await getRaffleState();
+        setRaffleState(stateFromContract.toString());
+
+        const feeFromContract = await fetchEntranceFee();
+        setCurrentEntranceFee(ethers.utils.formatUnits(feeFromContract, "ether"));
+
+        const playersNumber = await fetchNumberOfPlayers();
+        setCurrentNumberOfPlayers(playersNumber.toString());
+
+        const recentWinnerFromContract = await fetchRecentWinner();
+        setCurrentRecentWinner(recentWinnerFromContract);
+    }
+
     const handlePauseResume = async () => {
-        if (raffleState === "2") {
+        if (raffleState === "PAUSED") { // Assuming "PAUSED" is the enum value for PAUSED
             await unpauseLottery();
         } else {
             await pauseLottery();
@@ -108,53 +97,52 @@ export default function AdminPanel() {
     };
 
     const handleUpdateAggregatorAddress = async () => {
+        if (!newAggregatorAddress) {
+            console.log("Please enter a valid address.");
+            return;
+        }
         await updateAggregatorAddress({
             onSuccess: () => console.log("Aggregator address updated successfully"),
             onError: (error) => console.error(error),
         });
-    };
-
-    const handleSetMinEntries = async () => {
-        await setMinEntries({
-            onSuccess: () => {
-                console.log("Minimum entries updated successfully");
-                updateUI(); // Update UI to reflect new minimum entries
-            },
-            onError: (error) => console.error(error),
-        });
+        setNewAggregatorAddress(""); // Reset the input field after updating
     };
 
     return (
-        <div className="admin-panel">
-            <h1>Admin Panel</h1>
-            <div>
-                <button onClick={handlePauseResume}>
-                    {raffleState === "2" ? "Resume Lottery" : "Pause Lottery"}
-                </button>
-            </div>
-            <div>
-                <input
-                    type="text"
-                    value={newAggregatorAddress}
-                    onChange={(e) => setNewAggregatorAddress(e.target.value)}
-                    placeholder="New Aggregator Address"
-                />
-                <button onClick={handleUpdateAggregatorAddress}>Update Aggregator Address</button>
-            </div>
-            <div>
-                <h2>Contract Information</h2>
-                <p>Current Entrance Fee: {ethers.utils.formatUnits(currentEntranceFee, "ether")} MATIC</p>
-                <p>Raffle State: {raffleState}</p>
-                <p>Number of Players: {currentNumberOfPlayers}</p>
-                <p>Most Recent Winner: {currentRecentWinner}</p>
-                <h2>Minimum Number of Entries: {currentMinEntries}</h2>
-                <input
-                    type="number"
-                    value={newMinEntries}
-                    onChange={(e) => setNewMinEntries(e.target.value)}
-                    placeholder="Set New Minimum Entries"
-                />
-                <button onClick={handleSetMinEntries}>Update Minimum Entries</button>
+        <div>
+            <Header />
+            <div className="admin-panel p-5">
+                <h1 className="text-xl font-bold">Admin Panel</h1>
+                <div className="mt-3">
+                    <button
+                        className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                        onClick={handlePauseResume}
+                    >
+                        {raffleState === "PAUSED" ? "Resume Lottery" : "Pause Lottery"}
+                    </button>
+                </div>
+                <div className="mt-3">
+                    <input
+                        type="text"
+                        value={newAggregatorAddress}
+                        onChange={(e) => setNewAggregatorAddress(e.target.value)}
+                        placeholder="New Aggregator Address"
+                        className="border p-2 rounded"
+                    />
+                    <button
+                        className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded ml-2"
+                        onClick={handleUpdateAggregatorAddress}
+                    >
+                        Update Aggregator Address
+                    </button>
+                </div>
+                <div className="mt-3">
+                    <h2 className="text-lg font-bold">Contract Information</h2>
+                    <p>Current Entrance Fee: {currentEntranceFee} MATIC</p>
+                    <p>Raffle State: {raffleState}</p>
+                    <p>Number of Players: {currentNumberOfPlayers}</p>
+                    <p>Most Recent Winner: {currentRecentWinner}</p>
+                </div>
             </div>
         </div>
     );

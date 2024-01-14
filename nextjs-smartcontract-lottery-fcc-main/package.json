@@ -6,21 +6,28 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "format": "prettier --write '**/*.{js,jsx,ts,tsx,json,css}'",
+    "test": "echo \"Error: no test specified\" && exit 1"
+    // Additional scripts for different environments can be added here
   },
   "dependencies": {
-    "moralis": "^1.9.0", // Updated for potential new features and fixes
-    "next": "12.2.0", // Updated to the latest stable version
-    "react": "18.1.0", // Updated to the latest stable version
-    "react-dom": "18.1.0", // Updated to the latest stable version
-    "react-moralis": "^1.5.0", // Updated to ensure compatibility with the latest Moralis SDK
-    "web3uikit": "^0.1.200" // Updated for the latest UI components and fixes
+    "moralis": "^1.9.0", 
+    "next": "12.2.0",
+    "react": "18.1.0",
+    "react-dom": "18.1.0",
+    "react-moralis": "^1.5.0",
+    "web3uikit": "^0.1.200"
+    // Add any new or updated dependencies here
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.5", // Updated for the latest features
-    "eslint": "8.14.0", // Updated for the latest linting rules and compatibility
-    "eslint-config-next": "12.2.0", // Updated to match Next.js version
-    "postcss": "^8.4.14", // Updated for the latest CSS processing capabilities
-    "tailwindcss": "^3.1.0" // Updated for the latest utility-first CSS framework features
+    "autoprefixer": "^10.4.5",
+    "eslint": "8.14.0",
+    "eslint-config-next": "12.2.0",
+    "postcss": "^8.4.14",
+    "tailwindcss": "^3.1.0",
+    "prettier": "^2.x" // Ensure prettier is added for code formatting
+    // Add any new or updated dev dependencies here
   }
+  // Include peerDependencies if any
 }
