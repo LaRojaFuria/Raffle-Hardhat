@@ -12,6 +12,10 @@ export default function LotteryEntrance() {
     const [entranceFee, setEntranceFee] = useState("0");
     const [numberOfPlayers, setNumberOfPlayers] = useState("0");
     const [recentWinner, setRecentWinner] = useState("");
+<<<<<<< HEAD
+=======
+    const [isLoading, setIsLoading] = useState(false);
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
 
     const dispatch = useNotification();
 
@@ -25,26 +29,46 @@ export default function LotteryEntrance() {
     const { runContractFunction: getEntranceFee } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
+<<<<<<< HEAD
         functionName: "getEntranceFee",
+=======
+        functionName:        "getEntranceFee",
+        params: {},
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
     });
 
     const { runContractFunction: getPlayersNumber } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
         functionName: "getNumberOfPlayers",
+<<<<<<< HEAD
+=======
+        params: {},
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
     });
 
     const { runContractFunction: getRecentWinner } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
         functionName: "getRecentWinner",
+<<<<<<< HEAD
+=======
+        params: {},
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
     });
 
     useEffect(() => {
         if (isWeb3Enabled && raffleAddress) {
+<<<<<<< HEAD
             updateUIValues();
         }
     }, [isWeb3Enabled, raffleAddress]);
+=======
+            setIsLoading(true);
+            updateUIValues().finally(() => setIsLoading(false));
+        }
+    }, [isWeb3Enabled, raffleAddress, chainId]);
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
 
     async function updateUIValues() {
         try {
@@ -57,6 +81,10 @@ export default function LotteryEntrance() {
             setRecentWinner(recentWinnerFromCall);
         } catch (error) {
             console.error("Error updating UI values:", error);
+<<<<<<< HEAD
+=======
+            dispatchErrorNotification(error);
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
         }
     }
 
@@ -68,6 +96,10 @@ export default function LotteryEntrance() {
             });
         } catch (error) {
             console.error("Error on entering raffle:", error);
+<<<<<<< HEAD
+=======
+            dispatchErrorNotification(error);
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
         }
     };
 
@@ -82,6 +114,16 @@ export default function LotteryEntrance() {
             type: "info",
             message: "Transaction Complete!",
             title: "Transaction Notification",
+            position: "topR",
+            icon: "            bell",
+        });
+    };
+
+    const dispatchErrorNotification = (error) => {
+        dispatch({
+            type: "error",
+            message: error.message || "An error occurred",
+            title: "Error Notification",
             position: "topR",
             icon: "bell",
         });
@@ -98,8 +140,18 @@ export default function LotteryEntrance() {
                 className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded ml-auto"
                 onClick={handleEnterRaffle}
                 aria-label="Enter Raffle"
+<<<<<<< HEAD
             >
                 Enter Raffle
+=======
+                disabled={isLoading}
+            >
+                {isLoading ? (
+                    <div className="animate-spin spinner-border h-8 w-8 border-b-2 rounded-full"></div>
+                ) : (
+                    "Enter Raffle"
+                )}
+>>>>>>> effadabd51504d41744b35cff53e49e2d588fdee
             </button>
             <div>Entrance Fee: {ethers.utils.formatUnits(entranceFee, "ether")} MATIC</div>
             <div>Number of Players: {numberOfPlayers}</div>
@@ -107,3 +159,4 @@ export default function LotteryEntrance() {
         </div>
     );
 }
+
