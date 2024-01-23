@@ -5,7 +5,7 @@ import { useNotification } from "web3uikit";
 import { ethers } from "ethers";
 
 export default function LotteryEntrance() {
-    const { isWeb3Enabled, chainId: chainIdHex } = useMoralis();
+    const { isWeb3Enabled, chainId: chainIdHex, Moralis } = useMoralis();
     const chainId = parseInt(chainIdHex);
     const raffleAddress = chainId in contractAddresses ? contractAddresses[chainId][0] : null;
 
@@ -26,7 +26,7 @@ export default function LotteryEntrance() {
     const { runContractFunction: getEntranceFee } = useWeb3Contract({
         abi: abi,
         contractAddress: raffleAddress,
-        functionName:        "getEntranceFee",
+        functionName: "getEntranceFee",
         params: {},
     });
 
@@ -68,9 +68,15 @@ export default function LotteryEntrance() {
 
     const handleEnterRaffle = async () => {
         try {
+            const userBalance = await Moralis.Web3API.account.getNativeBalance({ chain: chainIdHex });
+            if (new ethers.BigNumber.from(userBalance.balance).lt(entranceFee)) {
+                dispatchErrorNotification({ message: "Insufficient funds to enter the raffle." });
+                return;
+            }
+
             await enterRaffle({
                 onSuccess: handleSuccess,
-                onError: (error) => console.error("Error entering the raffle:", error),
+                onError: (error) => dispatchErrorNotification(error),
             });
         } catch (error) {
             console.error("Error on entering raffle:", error);
@@ -90,7 +96,7 @@ export default function LotteryEntrance() {
             message: "Transaction Complete!",
             title: "Transaction Notification",
             position: "topR",
-            icon: "            bell",
+            icon: "bell",
         });
     };
 
@@ -129,4 +135,3 @@ export default function LotteryEntrance() {
         </div>
     );
 }
-

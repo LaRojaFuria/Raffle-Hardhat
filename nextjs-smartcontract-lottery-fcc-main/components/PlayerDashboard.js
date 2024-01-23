@@ -68,7 +68,6 @@ export default function PlayerDashboard() {
             setIsLoading(false);
         }
     }
-
     if (!isWeb3Enabled) {
         return <div>Please connect to a supported network.</div>;
     }
@@ -84,15 +83,15 @@ export default function PlayerDashboard() {
                     <p>Connected Address: {account}</p>
                     <div className="mt-3">
                         <h2 className="text-lg font-bold">Your Participation History</h2>
-                        {playerHistory.length === 0
-
-                        ? <p>You have not participated in any lotteries yet.</p>
-                        : playerHistory.map((entry, index) => (
-                            <div key={index}>
-                                <p>Lottery Entry {index + 1}: {entry}</p>
-                            </div>
-                        ))
-                    }
+                        {playerHistory.length === 0 ? (
+                            <p>You have not participated in any lotteries yet.</p>
+                        ) : (
+                            playerHistory.map((entry, index) => (
+                                <div key={index}>
+                                    <p>Lottery Entry {index + 1}: {entry}</p>
+                                </div>
+                            ))
+                        )}
                     </div>
                     <div className="mt-3">
                         <h2 className="text-lg font-bold">Lottery Information</h2>
@@ -105,6 +104,4 @@ export default function PlayerDashboard() {
         </div>
     );
 }
-
-
 

@@ -2,25 +2,30 @@ module.exports = {
     content: [
         "./pages/**/*.{js,ts,jsx,tsx}",
         "./components/**/*.{js,ts,jsx,tsx}",
-        // Add any other directories or file types where Tailwind classes are used
+        // Include any additional paths where Tailwind CSS classes might be used.
     ],
     theme: {
         extend: {
-            // Customize your theme here
-            // Example: colors: { primary: '#4ade80' }, fontFamily: { sans: ['Graphik', 'sans-serif'] }
+            // Customize your theme here.
+            // For example, to extend colors or fonts:
+            // colors: { primary: '#4ade80' },
+            // fontFamily: { sans: ['Graphik', 'sans-serif'] },
         },
     },
     plugins: [
-        // Add Tailwind CSS plugins here if needed
-        // Example: require('@tailwindcss/forms'), require('@tailwindcss/typography')
+        // Include Tailwind CSS plugins here if needed.
+        // For example: require('@tailwindcss/forms'), require('@tailwindcss/typography')
     ],
-    // If you're using JIT mode, uncomment the following line
-    // mode: 'jit',
+    // Enable JIT mode for improved performance. Uncomment the next line in production.
+    mode: 'jit',
     purge: {
         content: ['./pages/**/*.js', './components/**/*.js'],
         options: {
-            safelist: ['some-classes-you-want-to-safelist']
-        }
-    }
-    // Add any other Tailwind CSS configuration options here
+            safelist: [
+                // Add any classes you want to ensure are not purged here.
+                // For example, dynamic classes that might not be detected by the purge process.
+            ],
+        },
+    },
+    // Add any additional Tailwind CSS configuration options here.
 };

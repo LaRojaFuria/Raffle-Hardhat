@@ -1,7 +1,7 @@
 {
   "name": "hardhat-smartcontract-lottery-fcc",
   "version": "1.0.0",
-  "description": "A decentralized lottery system built with Hardhat, utilizing Chainlink Oracles and OpenZeppelin's upgradeable contracts.",
+  "description": "A decentralized lottery system built with Hardhat, utilizing Chainlink Oracles and OpenZeppelin's upgradeable contracts. This project includes a comprehensive suite of tools for testing, deployment, and security analysis of smart contracts.",
   "scripts": {
     "test": "yarn hardhat test",
     "test-staging": "yarn hardhat test --network sepolia",
@@ -10,7 +10,9 @@
     "format": "yarn prettier --write .",
     "coverage": "yarn hardhat coverage",
     "deploy": "yarn hardhat deploy --network <network>",
-    "verify": "yarn hardhat verify --network <network>"
+    "verify": "yarn hardhat verify --network <network>",
+    "clean": "hardhat clean",
+    "flatten": "hardhat flatten > flattened.sol"
   },
   "license": "MIT",
   "devDependencies": {
@@ -28,7 +30,9 @@
     "prettier": "^2.4.1",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "solhint": "^3.3.6",
-    "solidity-coverage": "^0.7.13"
+    "solidity-coverage": "^0.7.13",
+    "@nomiclabs/hardhat-solhint": "^3.0.0",
+    "hardhat-prettier": "^1.0.0"
   },
   "dependencies": {
     "@chainlink/contracts": "^0.5.1",
@@ -40,5 +44,9 @@
   },
   "mocha": {
     "timeout": 200000
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/hardhat-smartcontract-lottery-fcc.git"
   }
 }
