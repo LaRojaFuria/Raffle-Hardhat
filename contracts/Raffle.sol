@@ -4,6 +4,9 @@ pragma solidity ^0.8.7;
 
 // Import OpenZeppelin's upgradeable contracts and Chainlink interfaces
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/finance/PaymentSplitterUpgradeable.sol";
@@ -14,11 +17,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.s
 import "hardhat/console.sol";
 
 // Custom errors for specific fail states
-error Raffle__UpkeepNotNeeded(
-    uint256 currentBalance,
-    uint256 numPlayers,
-    uint256 raffleState
-);
+error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
 error Raffle__TransferFailed();
 error Raffle__SendMoreToEnterRaffle();
 error Raffle__RaffleNotOpen();
@@ -166,17 +165,11 @@ contract Raffle is
      */
     function checkUpkeep(
         bytes memory /* checkData */
-    )
-        public
-        view
-        override
-        returns (bool upkeepNeeded, bytes memory /* performData */)
-    {
+    ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
         bool hasPlayers = s_players.length >= 100;
-        bool hasBalance = address(this).balance >=
-            (s_entranceFeeInMatic * s_players.length);
+        bool hasBalance = address(this).balance >= (s_entranceFeeInMatic * s_players.length);
         upkeepNeeded = (timePassed && isOpen && hasBalance && hasPlayers);
         return (upkeepNeeded, "0x0");
     }
@@ -278,9 +271,7 @@ contract Raffle is
     // Function to pause the lottery
     function pauseLottery() external whenNotPaused {
         if (msg.sender != i_adminAddress) {
-            revert Raffle__AddressNotAuthorized(
-                "Only admin can pause the lottery"
-            );
+            revert Raffle__AddressNotAuthorized("Only admin can pause the lottery");
         }
         _pause();
         s_raffleState = RaffleState.PAUSED;
@@ -289,9 +280,7 @@ contract Raffle is
     // Function to unpause the lottery
     function unpauseLottery() external whenPaused {
         if (msg.sender != i_adminAddress) {
-            revert Raffle__AddressNotAuthorized(
-                "Only admin can unpause the lottery"
-            );
+            revert Raffle__AddressNotAuthorized("Only admin can unpause the lottery");
         }
         _unpause();
         s_raffleState = RaffleState.OPEN;
@@ -300,14 +289,10 @@ contract Raffle is
     // Function to update Chainlink aggregator address
     function updateAggregatorAddress(address _newAggregatorAddress) external {
         if (msg.sender != i_adminAddress) {
-            revert Raffle__AddressNotAuthorized(
-                "Only the admin can update the aggregator address"
-            );
+            revert Raffle__AddressNotAuthorized("Only the admin can update the aggregator address");
         }
         if (_newAggregatorAddress == address(0)) {
-            revert InvalidAddress(
-                "Provided aggregator address is the zero address"
-            );
+            revert InvalidAddress("Provided aggregator address is the zero address");
         }
         maticUsdAggregatorAddress = _newAggregatorAddress;
         maticUsdAggregator = AggregatorV3Interface(maticUsdAggregatorAddress);
