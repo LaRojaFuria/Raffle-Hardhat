@@ -4,9 +4,6 @@ pragma solidity ^0.8.7;
 
 // Import OpenZeppelin's upgradeable contracts and Chainlink interfaces
 import "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin/contracts-upgradeable/token/ERC20/utils/SafeERC20Upgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/AddressUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/finance/PaymentSplitterUpgradeable.sol";
@@ -23,6 +20,7 @@ error Raffle__SendMoreToEnterRaffle();
 error Raffle__RaffleNotOpen();
 error Raffle__AddressNotAuthorized(string message);
 error Raffle__RafflePaused();
+error Raffle__InvalidAddress(string message);
 
 // Contract meta information
 /**@title A Raffle Contract
@@ -133,6 +131,10 @@ contract Raffle is
         // Calculate entrance fee based on MATIC/USD price for 10 USD
         // Assuming price is in 8 decimal places and you want 10 USD worth of MATIC
         s_entranceFeeInMatic = (10 * 1e18) / uint256(price);
+    }
+
+    function __VRFConsumerBaseV2_init(address _vrfCoordinator) internal initializer {
+        VRFConsumerBaseV2.initialize(_vrfCoordinator);
     }
 
     function enterRaffle() public payable {
