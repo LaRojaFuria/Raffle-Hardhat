@@ -26,7 +26,6 @@ error Raffle__RafflePaused();
 
 // Contract meta information
 /**@title A Raffle Contract
- * @version 1.0.0
  * @author Eric Carmical
  * @notice This contract facilitates a decentralized raffle game, where participants can enter by sending MATIC. The raffle is automated by Chainlink Keepers and secured by Chainlink VRF.
  * @dev This contract is built with upgradeability and pausability features. It utilizes Chainlink VRF Version 2 for secure randomness and Chainlink Keepers for automated maintenance tasks like picking winners and resetting the raffle state.
