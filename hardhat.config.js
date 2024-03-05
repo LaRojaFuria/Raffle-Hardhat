@@ -8,12 +8,15 @@ require("dotenv").config()
 
 const checkEnvVariables = () => {
     const requiredVars = [
+        "DEPLOYER_ADMIN_ADDRESS",
+        "DEVELOPER_ADDRESS",
         "PRIVATE_KEY",
         "MAINNET_RPC_URL",
+        "SEPOLIA_RPC_URL",
         "POLYGON_MAINNET_RPC_URL",
+        "MUMBAI_RPC_URL",
         "ETHERSCAN_API_KEY",
         "POLYGONSCAN_API_KEY",
-        // Add additional required environment variables here
     ]
     const missingVars = requiredVars.filter((v) => !process.env[v])
     if (missingVars.length > 0) {
@@ -30,7 +33,7 @@ const POLYGON_MAINNET_RPC_URL = process.env.POLYGON_MAINNET_RPC_URL
 const PRIVATE_KEY = process.env.PRIVATE_KEY
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY
 const POLYGONSCAN_API_KEY = process.env.POLYGONSCAN_API_KEY
-const REPORT_GAS = process.env.REPORT_GAS || false
+const REPORT_GAS = process.env.REPORT_GAS || true
 
 module.exports = {
     defaultNetwork: "hardhat",
@@ -51,23 +54,24 @@ module.exports = {
             saveDeployments: true,
             chainId: 1,
         },
+        sepolia: {
+            url: SEPOLIA_RPC_URL,
+            accounts: [PRIVATE_KEY],
+            saveDeployments: true,
+            chainId: 11155111,
+        },
         polygon: {
             url: POLYGON_MAINNET_RPC_URL,
             accounts: [PRIVATE_KEY],
             saveDeployments: true,
             chainId: 137,
         },
-        rinkeby: {
-            url: process.env.RINKEBY_RPC_URL,
+        mumbai: {
+            url: MUMBAI_RPC_URL,
             accounts: [PRIVATE_KEY],
-            chainId: 4,
+            saveDeployments: true,
+            chainId: 80001,
         },
-        ropsten: {
-            url: process.env.ROPSTEN_RPC_URL,
-            accounts: [PRIVATE_KEY],
-            chainId: 3,
-        },
-        // Add other networks as needed
     },
     etherscan: {
         apiKey: {

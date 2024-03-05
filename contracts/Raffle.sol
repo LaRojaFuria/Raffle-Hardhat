@@ -59,23 +59,23 @@ contract Raffle is
     uint256 private s_totalShares;
 
     // Chainlink VRF variables for secure randomness
-    VRFCoordinatorV2Interface private immutable i_vrfCoordinator;
-    uint64 private immutable i_subscriptionId;
-    bytes32 private immutable i_gasLane;
-    uint32 private immutable i_callbackGasLimit;
+    VRFCoordinatorV2Interface private i_vrfCoordinator;
+    uint64 private i_subscriptionId;
+    bytes32 private i_gasLane;
+    uint32 private i_callbackGasLimit;
     uint16 private constant REQUEST_CONFIRMATIONS = 3;
     uint32 private constant NUM_WORDS = 1;
 
     // Lottery-specific variables
-    uint256 private immutable i_interval;
+    uint256 private i_interval;
     uint256 private s_entranceFeeInMatic;
     uint256 private s_lastTimeStamp;
     address private s_recentWinner;
     address payable[] private s_players;
     RaffleState private s_raffleState;
     uint256 public minimumEntrees = 100;
-    address private immutable i_developerAddress;
-    address private immutable i_adminAddress;
+    address private i_developerAddress;
+    address private i_adminAddress;
 
     /* Events */
     event RequestedRaffleWinner(uint256 indexed requestId);
@@ -83,22 +83,20 @@ contract Raffle is
     event WinnerPicked(address indexed player);
     event EntranceFeeSet(bool success, string message);
 
+    // Constructor for initial deployment
+    constructor(address vrfCoordinatorV2) VRFConsumerBaseV2(vrfCoordinatorV2) {}
+
     /* Functions */
     function initialize(
         address _maticUsdAggregatorAddress,
         address _developerAddress,
         address _adminAddress,
-        address vrfCoordinatorV2,
+        address /*vrfCoordinatorV2*/,
         uint64 subscriptionId,
-        bytes32 gasLane,
+        bytes32 /*gasLane*/,
         uint256 interval,
         uint32 callbackGasLimit
     ) public initializer {
-        // Initialize VRFConsumerBaseV2 variables
-        __VRFConsumerBaseV2_init(vrfCoordinatorV2);
-        i_vrfCoordinator = VRFCoordinatorV2Interface(vrfCoordinatorV2);
-        i_gasLane = gasLane;
-
         // Initialize PaymentSplitter variables
         address[] memory initialPayees = new address[](2);
         uint256[] memory initialShares = new uint256[](2);
@@ -133,8 +131,11 @@ contract Raffle is
         s_entranceFeeInMatic = (10 * 1e18) / uint256(price);
     }
 
-    function __VRFConsumerBaseV2_init(address _vrfCoordinator) internal initializer {
-        VRFConsumerBaseV2.initialize(_vrfCoordinator);
+    // Override for UUPSUpgradeable's _authorizeUpgrade function
+    function _authorizeUpgrade(address /*newImplementation*/) internal override {
+        if (msg.sender != i_adminAddress) {
+            revert("Only admin can upgrade");
+        }
     }
 
     function enterRaffle() public payable {
@@ -246,13 +247,7 @@ contract Raffle is
         s_recentWinner = recentWinner;
 
         // Fetch the latest MATIC/USD price to set the new entrance fee
-        (
-            uint80 roundID,
-            int256 answer,
-            uint256 startedAt,
-            uint256 updatedAt,
-            uint80 answeredInRound
-        ) = maticUsdAggregator.latestRoundData();
+        (, int256 answer, , , ) = maticUsdAggregator.latestRoundData();
 
         // Check for zero or negative MATIC/USD price and revert if invalid
         if (answer <= 0) {
@@ -293,7 +288,7 @@ contract Raffle is
             revert Raffle__AddressNotAuthorized("Only the admin can update the aggregator address");
         }
         if (_newAggregatorAddress == address(0)) {
-            revert InvalidAddress("Provided aggregator address is the zero address");
+            revert Raffle__InvalidAddress("Provided aggregator address is the zero address");
         }
         maticUsdAggregatorAddress = _newAggregatorAddress;
         maticUsdAggregator = AggregatorV3Interface(maticUsdAggregatorAddress);
