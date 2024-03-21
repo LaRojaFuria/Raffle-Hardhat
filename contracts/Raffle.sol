@@ -11,9 +11,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
-import "hardhat/console.sol";
+import "./VrfFunder.sol"; // Importing the VrfFunder contract
+import "hardhat/console.sol"; // Importing for debugging purposes
 
-// Custom errors for specific fail states
+// Custom errors for specific fail states in the Raffle contract
 error Raffle__UpkeepNotNeeded(uint256 currentBalance, uint256 numPlayers, uint256 raffleState);
 error Raffle__TransferFailed();
 error Raffle__SendMoreToEnterRaffle();
@@ -29,7 +30,7 @@ error Raffle__InvalidAddress(string message);
  * @dev This contract is built with upgradeability and pausability features. It utilizes Chainlink VRF Version 2 for secure randomness and Chainlink Keepers for automated maintenance tasks like picking winners and resetting the raffle state.
  */
 
-// Main contract declaration inheriting various other contracts
+// Main Raffle contract
 contract Raffle is
     Initializable,
     UUPSUpgradeable,
@@ -40,7 +41,7 @@ contract Raffle is
 {
     /* Type declarations */
 
-    // Raffle state enum to manage different stages of the raffle
+    // Enum to represent the different states of the raffle
     enum RaffleState {
         OPEN,
         CALCULATING,
@@ -76,6 +77,7 @@ contract Raffle is
     uint256 public minimumEntrees = 100;
     address private i_developerAddress;
     address private i_adminAddress;
+    VrfFunder public vrfFunder;
 
     /* Events */
     event RequestedRaffleWinner(uint256 indexed requestId);
@@ -91,9 +93,10 @@ contract Raffle is
         address _maticUsdAggregatorAddress,
         address _developerAddress,
         address _adminAddress,
+        address _vrfFunderAddress,
         address /*vrfCoordinatorV2*/,
         uint64 subscriptionId,
-        bytes32 /*gasLane*/,
+        bytes32 /* gasLane */,
         uint256 interval,
         uint32 callbackGasLimit
     ) public initializer {
@@ -115,6 +118,7 @@ contract Raffle is
         maticUsdAggregatorAddress = _maticUsdAggregatorAddress;
         i_developerAddress = _developerAddress;
         i_adminAddress = _adminAddress;
+        vrfFunder = VrfFunder(_vrfFunderAddress);
 
         // Initialize Pausable and UUPSUpgradeable
         __Pausable_init();
@@ -127,17 +131,17 @@ contract Raffle is
             revert("Invalid MATIC/USD price");
         }
         // Calculate entrance fee based on MATIC/USD price for 10 USD
-        // Assuming price is in 8 decimal places and you want 10 USD worth of MATIC
         s_entranceFeeInMatic = (10 * 1e18) / uint256(price);
     }
 
-    // Override for UUPSUpgradeable's _authorizeUpgrade function
-    function _authorizeUpgrade(address /*newImplementation*/) internal override {
+    // Function to authorize contract upgrades
+    function _authorizeUpgrade(address) internal override {
         if (msg.sender != i_adminAddress) {
             revert("Only admin can upgrade");
         }
     }
 
+    // Function for participants to enter the raffle
     function enterRaffle() public payable {
         // Check if the sent value is sufficient
         if (msg.value < s_entranceFeeInMatic) {
@@ -170,7 +174,7 @@ contract Raffle is
     ) public view override returns (bool upkeepNeeded, bytes memory /* performData */) {
         bool isOpen = RaffleState.OPEN == s_raffleState;
         bool timePassed = ((block.timestamp - s_lastTimeStamp) > i_interval);
-        bool hasPlayers = s_players.length >= 100;
+        bool hasPlayers = s_players.length >= minimumEntrees;
         bool hasBalance = address(this).balance >= (s_entranceFeeInMatic * s_players.length);
         upkeepNeeded = (timePassed && isOpen && hasBalance && hasPlayers);
         return (upkeepNeeded, "0x0");
@@ -257,6 +261,9 @@ contract Raffle is
         // Update the entrance fee for the next round
         s_entranceFeeInMatic = uint256(answer) * 10; // 10 USD equivalent in MATIC
 
+        // Call to VrfFunder contract before reopening the raffle
+        vrfFunder.checkAndFundSubscription();
+
         // Re-open the raffle for the next round
         s_raffleState = RaffleState.OPEN;
         s_lastTimeStamp = block.timestamp;
@@ -264,22 +271,31 @@ contract Raffle is
         emit WinnerPicked(recentWinner);
     }
 
-    // Function to pause the lottery
-    function pauseLottery() external whenNotPaused {
+    // Function to pause the raffle
+    function pauseRaffle() external {
         if (msg.sender != i_adminAddress) {
-            revert Raffle__AddressNotAuthorized("Only admin can pause the lottery");
+            revert Raffle__AddressNotAuthorized("Only admin can pause the raffle");
         }
         _pause();
         s_raffleState = RaffleState.PAUSED;
     }
 
-    // Function to unpause the lottery
-    function unpauseLottery() external whenPaused {
+    // Function to unpause the raffle
+    function unpauseRaffle() external {
         if (msg.sender != i_adminAddress) {
-            revert Raffle__AddressNotAuthorized("Only admin can unpause the lottery");
+            revert Raffle__AddressNotAuthorized("Only admin can unpause the raffle");
         }
         _unpause();
         s_raffleState = RaffleState.OPEN;
+    }
+
+    // Function to set a new entrance fee
+    function setEntranceFee(uint256 newEntranceFee) external {
+        if (msg.sender != i_adminAddress) {
+            revert Raffle__AddressNotAuthorized("Only admin can set the entrance fee");
+        }
+        s_entranceFeeInMatic = newEntranceFee;
+        emit EntranceFeeSet(true, "Entrance fee updated successfully");
     }
 
     // Function to update Chainlink aggregator address
@@ -295,29 +311,8 @@ contract Raffle is
     }
 
     /** Getter Functions */
-
     function getRaffleState() public view returns (RaffleState) {
         return s_raffleState;
-    }
-
-    function getNumWords() public pure returns (uint256) {
-        return NUM_WORDS;
-    }
-
-    function getRequestConfirmations() public pure returns (uint256) {
-        return REQUEST_CONFIRMATIONS;
-    }
-
-    function getRecentWinner() public view returns (address) {
-        return s_recentWinner;
-    }
-
-    function getPlayer(uint256 index) public view returns (address) {
-        return s_players[index];
-    }
-
-    function getLastTimeStamp() public view returns (uint256) {
-        return s_lastTimeStamp;
     }
 
     function getInterval() public view returns (uint256) {
@@ -330,5 +325,17 @@ contract Raffle is
 
     function getNumberOfPlayers() public view returns (uint256) {
         return s_players.length;
+    }
+
+    function getLastTimeStamp() public view returns (uint256) {
+        return s_lastTimeStamp;
+    }
+
+    function getRecentWinner() public view returns (address) {
+        return s_recentWinner;
+    }
+
+    function getPlayer(uint256 index) public view returns (address) {
+        return s_players[index];
     }
 }
