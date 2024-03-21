@@ -25,6 +25,11 @@ const checkEnvVariables = () => {
         "MUMBAI_USD_AGGREGATOR_ADDRESS",
         "ETHEREUM_USD_AGGREGATOR_ADDRESS",
         "SEPOLIA_USD_AGGREGATOR_ADDRESS",
+        // Add environment variables for VrfFunder contract addresses
+        "POLYGON_VRF_FUNDER_ADDRESS",
+        "MUMBAI_VRF_FUNDER_ADDRESS",
+        "ETHEREUM_VRF_FUNDER_ADDRESS",
+        "SEPOLIA_VRF_FUNDER_ADDRESS",
     ]
     const missingVars = requiredVars.filter((v) => !process.env[v])
     if (missingVars.length > 0) {
@@ -46,6 +51,7 @@ const networkConfig = {
         keepersUpdateInterval: process.env.KEEPERS_UPDATE_INTERVAL,
         callbackGasLimit: "500000",
         maticUsdAggregatorAddress: process.env.LOCAL_MATIC_USD_AGGREGATOR_ADDRESS,
+        vrfFunderAddress: ethers.constants.AddressZero, // Set to zero address for local testing
     },
     11155111: {
         name: "sepolia",
@@ -55,6 +61,7 @@ const networkConfig = {
         callbackGasLimit: process.env.SEPOLIA_CALLBACK_GAS_LIMIT,
         vrfCoordinatorV2: process.env.SEPOLIA_VRF_COORDINATOR,
         ethUsdAggregatorAddress: process.env.SEPOLIA_USD_AGGREGATOR_ADDRESS,
+        vrfFunderAddress: process.env.SEPOLIA_VRF_FUNDER_ADDRESS,
     },
     1: {
         name: "mainnet",
@@ -64,6 +71,7 @@ const networkConfig = {
         callbackGasLimit: process.env.ETHEREUM_CALLBACK_GAS_LIMIT,
         vrfCoordinatorV2: process.env.ETHEREUM_VRF_COORDINATOR,
         ethUsdAggregatorAddress: process.env.ETHEREUM_USD_AGGREGATOR_ADDRESS,
+        vrfFunderAddress: process.env.ETHEREUM_VRF_FUNDER_ADDRESS,
     },
     137: {
         name: "polygon",
@@ -73,6 +81,7 @@ const networkConfig = {
         callbackGasLimit: process.env.POLYGON_CALLBACK_GAS_LIMIT,
         vrfCoordinatorV2: process.env.POLYGON_VRF_COORDINATOR,
         maticUsdAggregatorAddress: process.env.POLYGON_MATIC_USD_AGGREGATOR_ADDRESS,
+        vrfFunderAddress: process.env.POLYGON_VRF_FUNDER_ADDRESS,
     },
     80001: {
         name: "mumbai",
@@ -82,6 +91,7 @@ const networkConfig = {
         callbackGasLimit: process.env.MUMBAI_CALLBACK_GAS_LIMIT,
         vrfCoordinatorV2: process.env.MUMBAI_VRF_COORDINATOR,
         maticUsdAggregatorAddress: process.env.MUMBAI_USD_AGGREGATOR_ADDRESS,
+        vrfFunderAddress: process.env.MUMBAI_VRF_FUNDER_ADDRESS,
     },
 }
 
