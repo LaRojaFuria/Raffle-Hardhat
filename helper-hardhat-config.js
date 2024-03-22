@@ -29,7 +29,7 @@ const checkEnvVariables = () => {
         "POLYGON_VRF_FUNDER_ADDRESS",
         "MUMBAI_VRF_FUNDER_ADDRESS",
         "ETHEREUM_VRF_FUNDER_ADDRESS",
-        "SEPOLIA_VRF_FUNDER_ADDRESS",
+        // "SEPOLIA_VRF_FUNDER_ADDRESS",
     ]
     const missingVars = requiredVars.filter((v) => !process.env[v])
     if (missingVars.length > 0) {
@@ -61,7 +61,7 @@ const networkConfig = {
         callbackGasLimit: process.env.SEPOLIA_CALLBACK_GAS_LIMIT,
         vrfCoordinatorV2: process.env.SEPOLIA_VRF_COORDINATOR,
         ethUsdAggregatorAddress: process.env.SEPOLIA_USD_AGGREGATOR_ADDRESS,
-        vrfFunderAddress: process.env.SEPOLIA_VRF_FUNDER_ADDRESS,
+        // vrfFunderAddress: process.env.SEPOLIA_VRF_FUNDER_ADDRESS,
     },
     1: {
         name: "mainnet",
