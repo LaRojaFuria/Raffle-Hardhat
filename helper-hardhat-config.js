@@ -1,5 +1,8 @@
 const { ethers } = require("hardhat")
 
+const BASE_FEE = ethers.utils.parseUnits("0.25", 18) // 0.25 LINK
+const GAS_PRICE_LINK = ethers.utils.parseUnits("1", 9) // 0.000000001 LINK per gas
+
 // Check for essential environment variables
 const checkEnvVariables = () => {
     const requiredVars = [
@@ -106,4 +109,14 @@ module.exports = {
     verificationBlockConfirmations,
     frontEndContractsFile,
     frontEndAbiFile,
+    BASE_FEE: "250000000000000000", // 0.25 LINK
+    GAS_PRICE_LINK: "1000000000", // 0.000000001 LINK per gas
+    networks: {
+        hardhat: {
+            accounts: {
+                count: 10,
+                accountsBalance: ethers.utils.parseEther("1000").toString(),
+            },
+        },
+    },
 }

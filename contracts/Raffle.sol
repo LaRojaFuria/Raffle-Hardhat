@@ -9,8 +9,8 @@ import "@openzeppelin/contracts-upgradeable/security/PausableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/finance/PaymentSplitterUpgradeable.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
-import "@chainlink/contracts/src/v0.8/VRFConsumerBaseV2.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AutomationCompatibleInterface.sol";
+import "@chainlink/contracts/src/v0.8/vrf/VRFConsumerBaseV2.sol";
+import "@chainlink/contracts/src/v0.8/automation/interfaces/AutomationCompatibleInterface.sol";
 import "./VrfFunder.sol"; // Importing the VrfFunder contract
 import "hardhat/console.sol"; // Importing for debugging purposes
 
@@ -93,7 +93,7 @@ contract Raffle is
         address _maticUsdAggregatorAddress,
         address _developerAddress,
         address _adminAddress,
-        address _vrfFunderAddress,
+        address payable _vrfFunderAddress,
         address /*vrfCoordinatorV2*/,
         uint64 subscriptionId,
         bytes32 /* gasLane */,
@@ -118,7 +118,7 @@ contract Raffle is
         maticUsdAggregatorAddress = _maticUsdAggregatorAddress;
         i_developerAddress = _developerAddress;
         i_adminAddress = _adminAddress;
-        vrfFunder = VrfFunder(_vrfFunderAddress);
+        vrfFunder = VrfFunder(payable(_vrfFunderAddress));
 
         // Initialize Pausable and UUPSUpgradeable
         __Pausable_init();

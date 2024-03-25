@@ -1,5 +1,8 @@
 const { ethers } = require("hardhat")
 const { networkConfig } = require("../helper-hardhat-config")
+const fs = require("fs")
+const path = require("path")
+const dotenv = require("dotenv")
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
     const { deploy, log } = deployments
@@ -13,7 +16,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     const pegSwapAddress = networkConfig[chainId].pegSwap
     const uniswapRouterAddress = networkConfig[chainId].uniswapRouter
     const subscriptionId = networkConfig[chainId].chainlinkSubscriptionId
-    const minLinkBalance = ethers.utils.parseEther("2") // Adjust the minimum LINK balance as needed
+    const minLinkBalance = ethers.utils.parseEther("2")
 
     const args = [
         vrfCoordinatorAddress,
@@ -33,6 +36,17 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     })
 
     log(`VrfFunder deployed to ${vrfFunder.address}`)
+
+    // Update the .env file with the new VrfFunder address
+    const envPath = path.join(__dirname, "../.env")
+    const envConfig = dotenv.parse(fs.readFileSync(envPath))
+    envConfig[`VRF_FUNDER_ADDRESS_${chainId}`] = vrfFunder.address
+    const newEnv = Object.entries(envConfig)
+        .map(([key, value]) => `${key}=${value}`)
+        .join("\n")
+    fs.writeFileSync(envPath, newEnv)
+
+    log(`Updated .env with VRF_FUNDER_ADDRESS_${chainId}=${vrfFunder.address}`)
 }
 
 module.exports.tags = ["all", "vrfFunder"]

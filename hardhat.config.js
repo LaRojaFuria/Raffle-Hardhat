@@ -1,4 +1,5 @@
 require("@nomiclabs/hardhat-waffle")
+require("@nomiclabs/hardhat-ethers")
 require("@nomiclabs/hardhat-etherscan")
 require("hardhat-deploy")
 require("solidity-coverage")
@@ -42,13 +43,29 @@ module.exports = {
     networks: {
         hardhat: {
             chainId: 31337,
+            timeout: 20000,
+            accounts: [
+                {
+                    count: 10,
+                    privateKey: PRIVATE_KEY,
+                    balance: "100000000000000000000", // 100 ETH
+                },
+            ],
             forking: {
                 url: MAINNET_RPC_URL,
-                blockNumber: 12345678, // specify a block number if needed
+                // blockNumber: 12345678, // Uncomment and specify a block number if needed
             },
         },
         localhost: {
             chainId: 31337,
+            url: "http://127.0.0.1:8545",
+            accounts: [
+                {
+                    count: 10,
+                    privateKey: PRIVATE_KEY,
+                    balance: "100000000000000000000", // 100 ETH
+                },
+            ],
         },
         mainnet: {
             url: MAINNET_RPC_URL,
