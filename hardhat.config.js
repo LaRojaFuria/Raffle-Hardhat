@@ -7,6 +7,8 @@ require("hardhat-gas-reporter")
 require("hardhat-contract-sizer")
 require("dotenv").config()
 
+const { ethers } = require("ethers")
+
 const checkEnvVariables = () => {
     const requiredVars = [
         "DEPLOYER_ADMIN_ADDRESS",
@@ -42,30 +44,16 @@ module.exports = {
     defaultNetwork: "hardhat",
     networks: {
         hardhat: {
-            chainId: 31337,
-            timeout: 20000,
-            accounts: [
-                {
-                    count: 10,
-                    privateKey: PRIVATE_KEY,
-                    balance: "100000000000000000000", // 100 ETH
-                },
-            ],
-            forking: {
-                url: MAINNET_RPC_URL,
-                // blockNumber: 12345678, // Uncomment and specify a block number if needed
+            accounts: {
+                mnemonic: "test test test test test test test test test test test junk",
+                initialIndex: 0,
+                count: 20,
+                path: "m/44'/60'/0'/0",
+                accountsBalance: "10000000000000000000000", // 10,000 ETH in wei
             },
-        },
-        localhost: {
-            chainId: 31337,
-            url: "http://127.0.0.1:8545",
-            accounts: [
-                {
-                    count: 10,
-                    privateKey: PRIVATE_KEY,
-                    balance: "100000000000000000000", // 100 ETH
-                },
-            ],
+            gas: "auto",
+            gasLimit: 100000000000, // Increase this value
+            gasPrice: 20000000000,
         },
         mainnet: {
             url: MAINNET_RPC_URL,

@@ -7,12 +7,10 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 import "@chainlink/contracts/src/v0.8/interfaces/VRFCoordinatorV2Interface.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@uniswap/v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
 
 contract VrfFunder {
     using SafeERC20 for IERC20;
-    using SafeMath for uint256;
 
     VRFCoordinatorV2Interface public vrfCoordinator;
     AggregatorV3Interface public priceFeed;
@@ -49,7 +47,7 @@ contract VrfFunder {
     function checkAndFundSubscription() public {
         (uint96 balance, , , ) = vrfCoordinator.getSubscription(subscriptionId);
         if (balance < minLinkBalance) {
-            uint256 linkAmountNeeded = minLinkBalance.sub(balance);
+            uint256 linkAmountNeeded = minLinkBalance - balance;
             uint256 maticAmountNeeded = getRequiredMaticAmount(linkAmountNeeded);
             swapMaticForLink(maticAmountNeeded);
             swapLinkForLink677(linkAmountNeeded);
@@ -121,7 +119,7 @@ contract VrfFunder {
      */
     function getRequiredMaticAmount(uint256 linkAmount) public view returns (uint256) {
         uint256 linkPrice = getLatestPrice();
-        return linkAmount.mul(1e18).div(linkPrice);
+        return (linkAmount * 1e18) / linkPrice;
     }
 
     /**
